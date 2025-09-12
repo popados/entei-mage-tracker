@@ -1,12 +1,15 @@
 ## Interface: 11404
 ## Title: Entei's Mage Tracker
 ## Notes: Tracks mage spells, cooldowns, buffs, consumables, and utilities.
-## Author: Entei
+## Author: Popados/Entei
 ## Version: 0.1
 ## SavedVariables: EnteiDB
 ## DefaultState: enabled
 ## X-Category: Mage
 ## X-Website: https://github.com/popados/entei-mage-tracker
 
-EnteiMageTracker.lua
-
+core.lua
+spells.lua
+buffs.lua
+reagents.lua
+ui.lua

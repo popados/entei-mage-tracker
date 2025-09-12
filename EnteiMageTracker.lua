@@ -2,7 +2,7 @@
 -- File: EnteisMageTracker.lua
 -- Minimal, modular skeleton to get you started. Fill in spell IDs/names and polish UI as needed.
 
-local addonName = "EnteisMageTracker"
+local addonName = "EnteiMageTracker"
 local Entei = {}
 _G[addonName] = Entei
 
@@ -195,41 +195,64 @@ frame.icons.counter = CreateIcon("Counterspell", frame, 44, -6)
 frame.icons.blink = CreateIcon("Blink", frame, 82, -6)
 frame.icons.evocation = CreateIcon("Evocation", frame, 120, -6)
 
+local function AttachCooldown(btn)
+  if not btn.cooldown then
+    btn.cooldown = CreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
+    btn.cooldown:SetAllPoints(btn)
+  end
+  return btn.cooldown
+end
+
+local function AttachText(btn)
+  if not btn.text then
+    btn.text = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    btn.text:SetPoint("CENTER", btn, "CENTER")
+  end
+  return btn.text
+end
+
 local function RefreshUI()
-  -- Update cooldown text / overlays
   for k, cfg in pairs(SPELLS) do
     local btn = frame.icons[string.lower(k)]
     if btn then
       local cd = state.cooldowns[k]
+      local cooldownFrame = AttachCooldown(btn)
+      local text = AttachText(btn)
+
       if cd and cd.duration and cd.duration > 0 then
         local expires = cd.start + cd.duration
         local remaining = expires - Now()
         if remaining > 0 then
+          cooldownFrame:SetCooldown(cd.start, cd.duration)
           btn.icon:SetAlpha(0.6)
-          btn:SetAlpha(1)
-          btn:SetText = function() end
-          -- In production create a Cooldown widget and set it
+          text:SetText(string.format("%.0f", remaining))
         else
+          cooldownFrame:Clear()
           btn.icon:SetAlpha(1)
+          text:SetText("")
         end
       else
+        cooldownFrame:Clear()
         btn.icon:SetAlpha(1)
+        text:SetText("")
       end
     end
   end
-
-  -- Buffs: quick display for player armor
-  if state.buffs["player:Armor"] then
-    frame.armorText = frame.armorText or frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    frame.armorText:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -46)
-    frame.armorText:SetText("Armor: " .. (state.buffs["player:Armor"].name or "None"))
-  end
-
-  -- Consumables reagent display
-  frame.reagentText = frame.reagentText or frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  frame.reagentText:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -64)
-  frame.reagentText:SetText("Runes: " .. (state.reagents.RuneOfPortals or 0))
 end
+
+-- during frame setup (after creating frame.bg, icons, etc.)
+frame.armorText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+frame.armorText:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -46)
+if state.buffs["player:Armor"] then
+  frame.armorText:SetText("Armor: " .. (state.buffs["player:Armor"].name or "None"))
+else
+  frame.armorText:SetText("Armor: None")
+end
+
+frame.reagentText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+frame.reagentText:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -64)
+frame.reagentText:SetText("Runes: 0")
+
 
 ----------------------------------------------------------------
 -- Main OnUpdate loop (throttled)
