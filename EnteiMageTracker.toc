@@ -13,3 +13,4 @@ spells.lua
 buffs.lua
 reagents.lua
 ui.lua
+panel.lua
