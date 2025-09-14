@@ -1,3 +1,142 @@
+-- core.lua
+local addonName, ns = ...
+local state = ns.state or {}
+
+-- Initialize all state subtables safely
+state.cooldowns = state.cooldowns or {}
+state.buffs = state.buffs or {}
+state.buffList = state.buffList or {}
+state.reagents = state.reagents or {}
+ns.state = state
+
+-- Helper for current time
+function ns.Now()
+    return GetTime()
+end
+
+-- Safe print for debugging
+function ns.PrintTitle(...)
+    print("|cfff4444f Entei |cf334fd9fMageTracker|r", ...)
+end
+
+-- Flag to ensure UI is initialized only once
+ns.InitializeUIDone = ns.InitializeUIDone or false
+
+-- Main event frame
+local f = CreateFrame("Frame")
+f:RegisterEvent("PLAYER_LOGIN")
+f:RegisterEvent("UNIT_AURA")
+f:RegisterEvent("BAG_UPDATE")
+f:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+
+f:SetScript("OnEvent", function(_, event, arg1, ...)
+    -- First run: PLAYER_LOGIN initializes the UI
+    if event == "PLAYER_LOGIN" and not ns.InitializeUIDone then
+        ns.InitializeUI()           -- create frame and all UI elements
+        ns.InitializeUIDone = true
+        ns.PrintTitle(...)
+        ns.UpdateAllBuffs()        -- scan player + party buffs
+        ns.UpdateReagents()        -- count runes and other items
+        ns.UpdateCooldowns()       -- scan tracked spell cooldowns
+        ns.RefreshUI()             -- draw initial state
+        return
+    end
+
+    -- Prevent updates if UI not yet created
+    if not ns.InitializeUIDone then return end
+
+    -- Update buffs
+    if event == "UNIT_AURA" and arg1 then
+        ns.UpdateAllBuffs()
+        ns.RefreshUI()
+    -- Update reagents
+    elseif event == "BAG_UPDATE" then
+        ns.UpdateReagents()
+        ns.RefreshUI()
+    -- Update spell cooldowns
+    elseif event == "SPELL_UPDATE_COOLDOWN" then
+        ns.UpdateCooldowns()
+        ns.RefreshUI()
+    end
+end)
+
+
+local ns = select(2, ...)
+
+local function ScanUnitBuffs(unit)
+  local i = 1
+  while true do
+    local name, _, _, _, duration, expires, caster = UnitBuff(unit, i)
+    if not name then break end
+
+    local buffData = {
+      unit     = unit,
+      name     = name,
+      duration = duration,
+      expires  = expires,
+      caster   = caster,
+    }
+
+    -- quick map access
+    if name == "Mage Armor" or name == "Ice Armor" or name == "Frost Armor" then
+      ns.state.buffs[unit .. ":Armor"] = buffData
+    else
+      ns.state.buffs[unit .. ":" .. name] = buffData
+    end
+
+    -- array access
+    table.insert(ns.state.buffList, buffData)
+    i = i + 1
+  end
+end
+
+function ns.UpdateAllBuffs()
+  ns.state.buffList = {}
+  ScanUnitBuffs("player")
+  for i = 1, GetNumGroupMembers() do
+    local unit = (IsInRaid() and "raid" .. i) or "party" .. i
+    if UnitExists(unit) then
+      ScanUnitBuffs(unit)
+    end
+  end
+end
+
+local ns = select(2, ...)
+
+-- Track runes etc
+local REAGENTS = {
+  RuneOfTeleportation = 17031,
+  RuneOfPortals       = 17032,
+}
+
+function ns.UpdateReagents()
+  for name, id in pairs(REAGENTS) do
+    local count = GetItemCount(id)
+    ns.state.reagents[name] = count
+  end
+end
+
+
+local ns = select(2, ...)
+
+-- Tracked spells
+ns.SPELLS = {
+  Polymorph    = 118,
+  FrostNova    = 122,
+  Counterspell = 2139,
+  Blink        = 1953,
+  Evocation    = 12051,
+  ArcaneIntellect = 10157,
+}
+
+function ns.UpdateCooldowns()
+  for name, id in pairs(ns.SPELLS) do
+    local start, duration, enabled = GetSpellCooldown(id)
+    ns.state.cooldowns[name] = { start=start, duration=duration, enabled=enabled }
+  end
+end
+
+
 local ns = select(2, ...)
 local state, SPELLS = ns.state, ns.SPELLS
 
@@ -155,8 +294,6 @@ function ns.InitializeUI()
     end
 end
 
--- ...existing code...
-
 -- Refresh UI: spells, buffs, reagents
 function ns.RefreshUI()
     if not frame then return end
@@ -178,12 +315,12 @@ end
 do
   local btn = frame.icons.ArcaneIntellect
   if btn then
-      local found, duration, expirationTime, texture, unitWithBuff
+      local found, duration, expirationTime, texture
 
       -- Check yourself first
       local name, icon, dur, exp, sid = FindBuff("player", SPELLS.ArcaneIntellect)
       if name then
-          found, duration, expirationTime, texture, unitWithBuff = true, dur, exp, icon, "player"
+          found, duration, expirationTime, texture = true, dur, exp, icon
       else
           -- Check party members
           for i = 1, GetNumGroupMembers() do
@@ -191,7 +328,7 @@ do
               if UnitExists(unit) then
                   local pname, picon, pdur, pexp, psid = FindBuff(unit, SPELLS.ArcaneIntellect)
                   if pname then
-                      found, duration, expirationTime, texture, unitWithBuff = true, pdur, pexp, picon, unit
+                      found, duration, expirationTime, texture = true, pdur, pexp, picon
                       break
                   end
               end
@@ -200,7 +337,6 @@ do
 
       if found and duration and expirationTime then
           local remaining = expirationTime - ns.Now()
-          if remaining < 0 then remaining = 0 end
 
           btn.icon:SetTexture(texture or GetSpellTexture(SPELLS.ArcaneIntellect))
           local text = AttachText(btn)
@@ -219,8 +355,6 @@ do
       end
   end
 end
-
--- ...existing code...
 
 
     -- Spells

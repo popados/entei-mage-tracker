@@ -15,8 +15,8 @@ function ns.Now()
 end
 
 -- Safe print for debugging
-function ns.Print(...)
-    print("|cff69ccf0[MageTracker]|r", ...)
+function ns.PrintTitle(...)
+    print("|cfff4444f Entei |cf334fd9fMageTracker|r", ...)
 end
 
 -- Flag to ensure UI is initialized only once
@@ -34,7 +34,7 @@ f:SetScript("OnEvent", function(_, event, arg1, ...)
     if event == "PLAYER_LOGIN" and not ns.InitializeUIDone then
         ns.InitializeUI()           -- create frame and all UI elements
         ns.InitializeUIDone = true
-
+        ns.PrintTitle(...)
         ns.UpdateAllBuffs()        -- scan player + party buffs
         ns.UpdateReagents()        -- count runes and other items
         ns.UpdateCooldowns()       -- scan tracked spell cooldowns

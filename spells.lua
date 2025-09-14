@@ -2,10 +2,12 @@ local ns = select(2, ...)
 
 -- Tracked spells
 ns.SPELLS = {
+  Polymorph    = 118,
   FrostNova    = 122,
   Counterspell = 2139,
   Blink        = 1953,
   Evocation    = 12051,
+  ArcaneIntellect = 10157,
 }
 
 function ns.UpdateCooldowns()

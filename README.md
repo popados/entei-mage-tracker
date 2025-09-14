@@ -11,6 +11,8 @@
 
 ## Specifications
 
+![Entei Mage Tracker](./img/Screenshot%202025-09-12%20at%207.36.26%E2%80%AFPM.png)
+
 **Entei’s Mage Tracker – Design Outline**
 
 Core Features for classic World of Warcraft
@@ -29,7 +31,7 @@ Armor (Frost/Fire/Mage Armor → highlight which is active, show alternatives).
 
 Wards (Fire Ward, Frost Ward).
 
-Arcane Intellect.
+Arcane Intellect
 
 **Party Buffs**
 
@@ -140,7 +142,16 @@ Got to work on the addon. Got the basic scaffolding for the lua in place. The va
       - Current
     - Blink
       - CD
-    -
+
+Added the addon panel options interface.
+
+Updating:
+
+- Textures
+- Cooldowns
+- Polymorph Target
+- Alerts
+- Refresh UI
 
 ---
 

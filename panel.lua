@@ -1,4 +1,8 @@
-local optionsPanel = CreateFrame("Frame", ADDON.."OptionsPanel", InterfaceOptionsFramePanelContainer)
+local addonName, ns = ...
+local state = ns.state
+
+
+local optionsPanel = CreateFrame("Frame", "OptionsPanel", InterfaceOptionsFramePanelContainer)
 optionsPanel.name = "Entei's Mage Tracker"
 
 -- Register panel with options
